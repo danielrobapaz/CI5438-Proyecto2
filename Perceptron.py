@@ -9,13 +9,13 @@ class Perceptron():
         perceptron will use.
     """
     def __init__(self, num_weights: int):
-        self.weights = np.zeros(num_weights)
+        self.weights = np.zeros(num_weights+1) 
 
-    def __input_function(self, input_values: np.ndarray) -> float:
-        if len(input_values) != self.weights:
+    def input_function(self, input_values: np.ndarray) -> float:
+        if len(input_values) != len(self.weights):
             raise Exception("Error: Len of input values not equal to len weights values. ")
-        
-        return np.dot(self.weights, input_values)
+        print(input_values)
+        return np.dot(self.weights,input_values)
     
     """
         Compute the Perceptron's activations function.
@@ -23,7 +23,7 @@ class Perceptron():
         The activation function is the logistic function.
     """
     def activation_function(self, input_values: np.ndarray) -> float:
-        if len(input_values) != self.weights:
+        if len(input_values) != len(self.weights):
             raise Exception("Error: Len of input values not equal to len weights values. ")
         
         x = self.__input_function(input_values)
@@ -34,7 +34,7 @@ class Perceptron():
         Compute the derivate of the Perceptron's activation function.
     """
     def activation_function_derivate(self, input_values: np.ndarray) -> float:
-        if len(input_values) != self.weights:
+        if len(input_values) != len(self.weights):
             raise Exception("Error: Len of input values not equal to len weights values. ")
 
         g = self.activation_function(input_values)
