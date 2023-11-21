@@ -22,7 +22,7 @@ class Neural_Network():
                  neurons_per_layer: [int],
                  num_hidden_layers: int = 0, 
                  ) -> None:
-        if num_hidden_layers != len(neurons_per_layer) - 1:
+        if num_hidden_layers != len(neurons_per_layer):
             raise Exception("Error: Number of hidden layer must be equal to the lenght of the neurons per layer minus one")
         
         self.examples = examples
@@ -39,6 +39,8 @@ class Neural_Network():
             else:
                 num_prev_layer = len(self.network[i-1])
                 self.network.append([Perceptron(num_prev_layer)]*neurons_per_layer[i])
+
+        self.network.append([Perceptron(neurons_per_layer[num_hidden_layers-1])])
 
     def cross_validation(self, size_of_training_set: int) -> None:
         x = self.examples[self.independent_vars]
@@ -61,28 +63,62 @@ class Neural_Network():
         Implementation of backpropagaion algorithm to train a neural network
     """
     def __backpropagation(self, training_set: pd.DataFrame) -> None:
-        i = 0
+        epoch = 0
         while (True):
             for (index,row) in training_set.iterrows():
                 x = row[self.independent_vars+['constant']]
                 y = row[self.dependent_var]
-
                 # activation of each perceptron
-                a = [np.array(x)] # activation for input layer
-                prev_a = a[0]
+                activation_per_perceptron = [list(x)] # activation for input layer
+                input_per_perceptron = []
                 for i in range(0, self.num_layers):
                     current_layer = self.network[i]
-                    current_a = [p.input_function(prev_a) for p in current_layer] + [1]
-                    prev_a = current_a
-                    a.append([current_a])
+                    previous_activation = activation_per_perceptron[-1]
 
-                ## propagar el descenso del gradiente
-                ## todo
+                    # input for each neuron
+                    current_input = [p.input_function(previous_activation) for p in current_layer]
+                    
+                    # activation of each neuron
+                    current_activation = [p.activation_function(previous_activation) for p in current_layer] + [1]
+                    
+                    activation_per_perceptron.append(current_activation)
+                    input_per_perceptron.append(current_input)
 
-            if i == 100000:
+                # propagates delta from output layer
+                delta = []
+                for j in range(len(self.network[-1])):
+                    current_perceptron = self.network[-1][j]
+                    current_activation = activation_per_perceptron[-1][j]
+                    current_input = input_per_perceptron[-1][j]
+                    derivate = current_perceptron.activation_function_derivate(current_input)
+                    error = y - current_activation
+
+                    delta.append(derivate*error)
+                
+                delta = [delta]
+                current_delta_index = 0
+                for l in range(self.num_layers-2, -1, -1):
+                    current_layer = self.network[l]
+                    current_gradient = delta[0]
+                    current_delta = []
+                    for i in range(len(current_layer)):
+                        current_perceptron = current_layer[i]
+                        current_input = input_per_perceptron[l][i]
+                        current_activation = activation_per_perceptron[l][i]
+                        derivate = current_perceptron.activation_function_derivate(current_input)
+
+                        # some magic over here
+                        magic_number_1 = current_input * len(current_gradient)
+                        magic_number_2 = np.dot(magic_number_1, current_gradient)
+                        current_delta.append(derivate*magic_number_2)
+                    delta = current_delta + delta
+
+                print(delta)
+                return
+            if epoch == 100000:
                 break
 
-            i += 1
+            epoch += 1
     
     def __evaluate_network(self, input_values: np.array) -> None:
         return None
