@@ -34,15 +34,13 @@ class Neural_Network():
         num_indepedent_vars = len(indepedent_vars)
         
         for i in range(0,len(neurons_per_layer)):
-            print(i)
             if i == 0:
                 current_layer = [Perceptron(num_indepedent_vars) for j in range(neurons_per_layer[i])]
             else:
                 num_prev_layer = len(self.network[i-1])
                 current_layer = [Perceptron(num_prev_layer) for j in range(neurons_per_layer[i])]
             self.network.append(current_layer)
-
-        self.network.append([Perceptron(neurons_per_layer[num_hidden_layers-1])])
+        self.network.append([Perceptron(neurons_per_layer[-1]) for k in self.dependent_var]) #Agregar capa de salida a la red
 
     def cross_validation(self, size_of_training_set: float,
                          learning_rate: float = 0.1) -> None:
@@ -88,33 +86,35 @@ class Neural_Network():
                     activation_per_perceptron.append(current_activation)
                     input_per_perceptron.append(current_input)
 
-                # propagates delta from output layer
+                # Calculate delta for output layer
                 delta = []
                 for j in range(len(self.network[-1])):
                     current_perceptron = self.network[-1][j]
                     current_activation = activation_per_perceptron[-1][j]
                     current_input = input_per_perceptron[-1][j]
                     derivate = current_perceptron.activation_function_derivate(current_input)
-                    error = y - current_activation
+                    error = y[j] - current_activation
                     delta.append(derivate*error)
                 
+                # Calculate deltas for all hidden layers
                 delta = [delta]
                 current_delta_index = 0
                 for l in range(self.num_layers-2, -1, -1):
                     current_layer = self.network[l]
+                    next_layer = self.network[l+1]
                     current_gradient = delta[0]
                     current_delta = []
                     for i in range(len(current_layer)):
                         current_perceptron = current_layer[i]
                         current_input = input_per_perceptron[l][i]
                         current_activation = activation_per_perceptron[l][i]
-                        derivate = current_perceptron.activation_function_derivate(current_input)
+                        derivate = current_perceptron.activation_function_derivate(current_activation)
 
                         # some magic over here
-                        magic_number_1 = [current_input] * len(current_gradient)
+                        magic_number_1 = [next_layer[k].weights[i] for k in range(len(next_layer))]
                         magic_number_2 = np.dot(magic_number_1, current_gradient)
                         current_delta.append(derivate*magic_number_2)
-                    delta = [current_delta] + delta
+                    delta.insert(0, current_delta)
 
                 
                 # update every weight in network
@@ -126,8 +126,7 @@ class Neural_Network():
                 for i in range(len(self.network)):
                     print(i)
                     for j in range(len(self.network[i])):
-                        print(f"{self.network[i][j].weights} ", end="")
-                a = input()
+                        print(f"{self.network[i][j].weights} ")
             if epoch == 100000:
                 break
 

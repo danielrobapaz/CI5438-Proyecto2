@@ -10,7 +10,6 @@ class Perceptron():
     """
     def __init__(self, num_weights: int):
         self.weights = np.concatenate((np.random.rand(num_weights), [1])) 
-        print(self.weights)
 
     def input_function(self, input_values: np.ndarray) -> float:
         if len(input_values) != len(self.weights):
@@ -27,8 +26,7 @@ class Perceptron():
             raise Exception("Error: Len of input values not equal to len weights values. ")
         
         x = self.input_function(input_values)
-
-        return 1/(1+exp(-x))
+        return 1/(1 + exp(-x))
     
     """
         Compute the derivate of the Perceptron's activation function.
