@@ -9,7 +9,8 @@ class Perceptron():
         perceptron will use.
     """
     def __init__(self, num_weights: int):
-        self.weights = np.zeros(num_weights+1) 
+        self.weights = np.concatenate((np.random.rand(num_weights), [1])) 
+        print(self.weights)
 
     def input_function(self, input_values: np.ndarray) -> float:
         if len(input_values) != len(self.weights):
@@ -35,3 +36,6 @@ class Perceptron():
     def activation_function_derivate(self, input_value: np.ndarray) -> float:
         g = input_value
         return g*(1-g)
+    
+    def update_weights(self, update_value:float) -> None:
+        self.weights += update_value

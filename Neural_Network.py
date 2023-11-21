@@ -30,19 +30,22 @@ class Neural_Network():
         self.independent_vars = indepedent_vars
         self.neurons_per_layer = neurons_per_layer
         self.num_layers = num_hidden_layers+1
-
+        self.network = []
         num_indepedent_vars = len(indepedent_vars)
         
         for i in range(0,len(neurons_per_layer)):
+            print(i)
             if i == 0:
-                self.network = [[Perceptron(num_indepedent_vars)]*neurons_per_layer[i]]
+                current_layer = [Perceptron(num_indepedent_vars) for j in range(neurons_per_layer[i])]
             else:
                 num_prev_layer = len(self.network[i-1])
-                self.network.append([Perceptron(num_prev_layer)]*neurons_per_layer[i])
+                current_layer = [Perceptron(num_prev_layer) for j in range(neurons_per_layer[i])]
+            self.network.append(current_layer)
 
         self.network.append([Perceptron(neurons_per_layer[num_hidden_layers-1])])
 
-    def cross_validation(self, size_of_training_set: int) -> None:
+    def cross_validation(self, size_of_training_set: float,
+                         learning_rate: float = 0.1) -> None:
         x = self.examples[self.independent_vars]
         y = self.examples[self.dependent_var]
 
@@ -54,7 +57,7 @@ class Neural_Network():
         training_data = pd.concat([x_train, y_train], axis=1)
         testing_data = pd.concat([x_test, y_test], axis=1)
         # training
-        self.__backpropagation(training_data)
+        self.__backpropagation(training_data, learning_rate)
 
         # testing
 
@@ -62,7 +65,8 @@ class Neural_Network():
     """
         Implementation of backpropagaion algorithm to train a neural network
     """
-    def __backpropagation(self, training_set: pd.DataFrame) -> None:
+    def __backpropagation(self, training_set: pd.DataFrame,
+                          learning_rate: float) -> None:
         epoch = 0
         while (True):
             for (index,row) in training_set.iterrows():
@@ -92,7 +96,6 @@ class Neural_Network():
                     current_input = input_per_perceptron[-1][j]
                     derivate = current_perceptron.activation_function_derivate(current_input)
                     error = y - current_activation
-
                     delta.append(derivate*error)
                 
                 delta = [delta]
@@ -108,13 +111,23 @@ class Neural_Network():
                         derivate = current_perceptron.activation_function_derivate(current_input)
 
                         # some magic over here
-                        magic_number_1 = current_input * len(current_gradient)
+                        magic_number_1 = [current_input] * len(current_gradient)
                         magic_number_2 = np.dot(magic_number_1, current_gradient)
                         current_delta.append(derivate*magic_number_2)
-                    delta = current_delta + delta
+                    delta = [current_delta] + delta
 
-                print(delta)
-                return
+                
+                # update every weight in network
+                for i in range(self.num_layers):
+                    for j in range(len(self.network[i])):
+                        update_value = learning_rate*activation_per_perceptron[i][j]*delta[i][j]
+                        self.network[i][j].update_weights(update_value)
+
+                for i in range(len(self.network)):
+                    print(i)
+                    for j in range(len(self.network[i])):
+                        print(f"{self.network[i][j].weights} ", end="")
+                a = input()
             if epoch == 100000:
                 break
 
