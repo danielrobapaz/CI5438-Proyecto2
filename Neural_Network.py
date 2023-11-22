@@ -2,6 +2,7 @@ from Neuron_Layer import Neuron_Layer
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
 
 class Neural_Network():
 
@@ -92,6 +93,7 @@ class Neural_Network():
     """
     def __train_network(self, train_set: pd.DataFrame, epochs: int) -> None:
         epoch = 0
+        error_per_epoch = []
         while epoch < epochs:
             for (index, row) in train_set.iterrows():
                 x = row[self.ind_vars]
@@ -112,4 +114,6 @@ class Neural_Network():
                     #Update weights from current layer to next layer (W_j,k)
                     self.layers[i+1].update_weights(curr_layer.get_activations(), self.learning_rate)
             epoch += 1
+
+        
                     
