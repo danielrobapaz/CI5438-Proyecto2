@@ -71,21 +71,40 @@ class Neural_Network():
         #Show network tests
         failed_tests = 0
         test_num = 0
+
+        training_error = []
+        false_positive = 0
+        false_negative = 0
         for (index, row) in test_df.iterrows():
             test_input = row[self.ind_vars]
             test_output = pd.Series.to_numpy(row[self.dep_vars])
+
+            # Model output
             output = self.__calculate_output(test_input)
-            chosen_index = np.argmax(output) #Get the index of the highest output neuron
+            
+            # Get the index of the highest output neuron
+            chosen_index = np.argmax(output) 
+
+            # Get the index of the highest output expected
             ans_index = np.argmax(test_output)
+
+            training_error.append(np.abs(output[chosen_index]-test_output[ans_index]))
+
             if chosen_index != ans_index:
                 failed_tests += 1
             test_num += 1
         
-        print(f'Number of tests: {test_num}')
-        print(f'Number of tests failed: {failed_tests}')
-            
-        #To-Do
-        return
+        mean_error = np.mean(training_error)
+        min_error = np.min(training_error)
+        max_error = np.max(training_error)
+
+        print(f"Mean of error: {mean_error}")
+        print(f"Minimun error: {min_error}")
+        print(f"Maximun error: {max_error}")
+        print(f"Number of tests: {test_num}")
+        print(f"Number of tests failed: {failed_tests}")
+
+        return [mean_error, min_error, max_error]
     
     """
     Performs the backpropagation algorithm and updates the weights under
@@ -93,8 +112,13 @@ class Neural_Network():
     """
     def __train_network(self, train_set: pd.DataFrame, epochs: int) -> None:
         epoch = 0
-        error_per_epoch = []
+        mean_error_per_epoch = []
+        max_error_per_epoch = []
+        min_error_per_epoch = []
+
         while epoch < epochs:
+            current_epoch_error = []
+            
             for (index, row) in train_set.iterrows():
                 x = row[self.ind_vars]
                 y = row[self.dep_vars]
@@ -102,6 +126,9 @@ class Neural_Network():
                 #Calculate network output
                 hw = self.__calculate_output(x)
                 error = y - hw
+
+                current_epoch_error.append(np.abs(error[np.argmax(hw)]))
+
                 #Update output layer delta
                 self.layers[-1].update_delta_output(error)
 
@@ -115,5 +142,38 @@ class Neural_Network():
                     self.layers[i+1].update_weights(curr_layer.get_activations(), self.learning_rate)
             epoch += 1
 
+            mean_error_per_epoch.append(np.mean(current_epoch_error))
+            max_error_per_epoch.append(np.max(current_epoch_error))
+            min_error_per_epoch.append(np.min(current_epoch_error))
+
+        self.__plot_error(mean_error_per_epoch, 
+                          max_error_per_epoch, 
+                          min_error_per_epoch, 
+                          "Error per epoch in training")
+
+    """
+    Plot the changes in the mean, minimun and maximun error of the neural network
+    """
+    def __plot_error(self,
+                     mean_error: [float],
+                     max_error: [float],
+                     min_error: [float],
+                     title: str) -> None:
         
-                    
+        x = np.linspace(1, self.max_iter, num=self.max_iter)
+        
+        fig, axs = plt.subplots(3)
+        fig.suptitle(title)
+        axs[0].plot(x, mean_error)
+        axs[1].plot(x, min_error)
+        axs[2].plot(x, max_error)
+        
+        ylabels = ["Mean error", "Minimin error", "Maximun error"]
+        for i in [0, 1, 2]:
+            axs[i].set_xlabel("Epoch")
+            axs[i].set_ylabel(ylabels[i])
+        
+        fig.tight_layout()
+        fig.set_figwidth(12)
+        fig.set_figheight(8)
+        plt.show()
