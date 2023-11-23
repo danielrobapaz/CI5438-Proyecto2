@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 class Neural_Network():
 
@@ -73,8 +74,13 @@ class Neural_Network():
         test_num = 0
 
         training_error = []
+
+        # data for binary clasification
         false_positive = 0
         false_negative = 0
+        true_positive = 0
+        true_negative = 0
+
         for (index, row) in test_df.iterrows():
             test_input = row[self.ind_vars]
             test_output = pd.Series.to_numpy(row[self.dep_vars])
@@ -87,11 +93,25 @@ class Neural_Network():
 
             # Get the index of the highest output expected
             ans_index = np.argmax(test_output)
-
             training_error.append(np.abs(output[chosen_index]-test_output[ans_index]))
 
-            if chosen_index != ans_index:
-                failed_tests += 1
+            if len(self.dep_vars) > 1:
+                if chosen_index != ans_index:
+                    failed_tests += 1
+
+            # update values for binary clasification
+            else:
+                is_category = output[0] >= 0.5
+                if is_category:
+                    if test_output[0] == 1:
+                        true_positive += 1
+                    else:
+                        false_positive += 1
+                else:
+                    if test_output[0] == 1:
+                        false_negative += 1
+                    else:
+                        true_negative += 1
             test_num += 1
         
         mean_error = np.mean(training_error)
@@ -101,9 +121,16 @@ class Neural_Network():
         print(f"Mean of error: {mean_error}")
         print(f"Minimun error: {min_error}")
         print(f"Maximun error: {max_error}")
-        print(f"Number of tests: {test_num}")
-        print(f"Number of tests failed: {failed_tests}")
 
+        if len(self.dep_vars) > 1:
+            print(f"Number of tests: {test_num}")
+            print(f"Number of tests failed: {failed_tests}")
+        
+        else:
+            self.__plot_confusion_matrix(tp=true_positive,
+                                         tn=true_negative,
+                                         fp=false_positive,
+                                         fn=false_negative)
         return [mean_error, min_error, max_error]
     
     """
@@ -176,4 +203,22 @@ class Neural_Network():
         fig.tight_layout()
         fig.set_figwidth(12)
         fig.set_figheight(8)
+        plt.show()
+
+    def __plot_confusion_matrix(self, 
+                                tp: int,
+                                tn: int,
+                                fp: int,
+                                fn: int) -> None:
+        confusion_matrix = pd.DataFrame(data={
+            'True': [tp, tn],
+            'False': [fp, fn]
+        }, index=['Positive', 'Negative'])
+
+        sns.heatmap(confusion_matrix,
+                    annot=True,
+                    cbar=False,
+                    cmap=sns.color_palette("mako", as_cmap=True),
+                    fmt='g')
+        plt.title("Confussion matrix")
         plt.show()
